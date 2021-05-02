@@ -54,8 +54,8 @@ class GAME:
         self.fruit = FRUIT(self.screen)
         self.score = 0
         self.states = None
-        self.reward = 0
         self.is_updated = None
+        self.reset()
 
     def set_timer(self, timer):
         pygame.time.set_timer(self.SCREEN_UPDATE, timer)
@@ -63,23 +63,6 @@ class GAME:
     def reset(self):
         self.snake = SNAKE(self.screen)
         self.fruit = FRUIT(self.screen)
-        self.score = 0
-        self.is_updated = None
-
-    def update(self):
-        self.snake.move_body()
-        self.reward = -0.1
-        done = 0
-        if self.check_fail():
-            self.reset()
-            self.reward = -1
-            done = 1
-        if self.check_collision():
-            self.snake.body.insert(0, self.fruit.pos)
-            self.score += 1
-            self.randomize()
-            self.reward = 1
-        return self.reward, done
 
     def check_collision(self):
         return self.snake.body[0] == self.fruit.pos
@@ -105,30 +88,37 @@ class GAME:
         return states
 
     def spin_once(self, action):
-        done = 0
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-            elif event.type == self.SCREEN_UPDATE:
-                reward, done = self.update()
-                self.is_updated = 1
-            if self.is_updated == 1:
-                self.is_updated = 0
-                if action == 0:
-                    if self.snake.direction[1] != -1:
-                        self.snake.direction = (0, 1)
-                elif action == 1:
-                    if self.snake.direction[1] != 1:
-                        self.snake.direction = (0, -1)
-                elif action == 2:
-                    if self.snake.direction[0] != -1:
-                        self.snake.direction = (1, 0)
-                elif action == 3:
-                    if self.snake.direction[0] != 1:
-                        self.snake.direction = (-1, 0)
-        self.clock.tick(30)
-        return self.get_states(), self.reward, done, self.score
+        self.snake.move_body()
+        reward = -0.1
+        done = False
+        if self.check_collision():
+            self.snake.body.insert(0, self.fruit.pos)
+            self.score += 1
+            self.randomize()
+            reward = 10
+
+        if self.check_fail():
+            reward = -10
+            done = True
+            self.reset()
+
+        if action == 0:
+            if self.snake.direction[1] != -1:
+                self.snake.direction = (0, 1)
+        elif action == 1:
+            if self.snake.direction[1] != 1:
+                self.snake.direction = (0, -1)
+        elif action == 2:
+            if self.snake.direction[0] != -1:
+                self.snake.direction = (1, 0)
+        elif action == 3:
+            if self.snake.direction[0] != 1:
+                self.snake.direction = (-1, 0)
+        return self.get_states(), reward, done, self.score
 
     def draw(self):
         self.screen.fill((175, 215, 120))
@@ -140,7 +130,7 @@ class GAME:
 if __name__ == "__main__":
     game = GAME()
     input_a = int(input("input:"))
-    while (True):
+    while True:
         if input_a == "q":
             game.reset()
         else:

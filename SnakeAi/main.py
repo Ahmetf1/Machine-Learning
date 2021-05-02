@@ -7,24 +7,21 @@ cell_size = 30
 cell_number = 20
 
 n_output = 4
-lr_rate = 1e-3
+lr_rate = 5e-3
 
 gamma = 0.99
-epsilon = 1
 batch_size = 256
 n_action = 4
 input_dims = [2, cell_number, cell_number]
 mem_size = 200000
-epsilon_end = 0.01
-epsilon_dec = 1e-4
 
 n_games = 10000
 
 if __name__ == "__main__":
     game = GAME()
-    game.set_timer(10)
+    game.set_timer(100)
     network = Network(n_output, lr_rate)
-    agent = Agent(network, gamma, epsilon, batch_size, n_action, input_dims, mem_size, epsilon_end, epsilon_dec)
+    agent = Agent(network, gamma, batch_size, n_action, input_dims, mem_size)
 
     scores = []
     avg_rewards = []
@@ -34,7 +31,9 @@ if __name__ == "__main__":
         if not n == 0:
             scores.append(score)
             avg_rewards.append(total_reward / n_moves)
+        game.reset()
         score = 0
+        game.score = 0
         total_reward = 0
         n_moves = 0
         done = False
@@ -42,17 +41,18 @@ if __name__ == "__main__":
         while not done:
             action = agent.choose_action(observation)
             observation_, reward, done, score = game.spin_once(action)
-            game.draw()
+            #game.draw()
             agent.store_data(observation, action, reward, observation_, done)
             agent.learn()
             observation = observation_
             total_reward += reward
             n_moves += 1
             if score > score_max:
+                print(score)
                 score_max = score
                 print(f"max score: {score_max}")
         if n % 100 == 0:
-            print(f"episode {n} completed with score: {score} epsilon: {agent.epsilon} "
+            print(f"episode {n} completed with score: {score}"
                   f"avg_reward: {total_reward / n_moves}")
         if n % 2000 == 0 and n != 0:
             try:
@@ -62,4 +62,3 @@ if __name__ == "__main__":
         plt.plot(scores)
         plt.plot(avg_rewards)
         plt.pause(0.001)
-        print(score)
