@@ -12,20 +12,23 @@ class Network(nn.Module):
         self.linear1 = nn.Linear(16 * 16 * 16, 20 * 20)
         self.linear2 = nn.Linear(20 * 20, 20)
         self.linear3 = nn.Linear(20, n_output)
-        self.softmax = nn.Softmax(dim=0)
+        self.softmax = nn.Softmax(dim=0)  # throw error
         self.optimizer = T.optim.Adam(self.parameters(), lr_rate)
         self.device = T.device("cuda:0" if T.cuda.is_available() else "cpu")
         self.loss = nn.MSELoss()
+        print(f"device: {self.device}")
 
     def forward(self, x):
         x = x.view(-1, 2, 20, 20)
-        x = F.leaky_relu(self.conv1(x))
-        x = F.leaky_relu(self.conv2(x))
+        x = T.relu(self.conv1(x))
+        x = T.relu(self.conv2(x))
         x = x.view(-1, 16 * 16 * 16)
-        x = F.leaky_relu(self.linear1(x))
+        x = T.relu(self.linear1(x))
         x = F.dropout(x, 0.2)
-        x = F.leaky_relu(self.linear2(x))
+        x = T.relu(self.linear2(x))
+        x = F.dropout(x, 0.2)
         x = self.linear3(x)
+        # x = T.softmax(x, dim=0, dtype=T.float32)   throw error
         return x
 
 
@@ -89,4 +92,3 @@ class Agent:
             self.network_model.optimizer.step()
 
             self.epsilon = self.epsilon - self.epsilon_dec if self.epsilon > self.epsilon_end else self.epsilon_end
-
