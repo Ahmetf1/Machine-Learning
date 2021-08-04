@@ -3,8 +3,8 @@ import sys
 import numpy as np
 from pygame.math import Vector2
 
-cell_size = 30
-cell_number = 20
+cell_size = 60
+cell_number = 10
 
 
 class FRUIT:
@@ -24,7 +24,7 @@ class FRUIT:
 
 class SNAKE:
     def __init__(self, screen):
-        self.body = [Vector2(7, 10), Vector2(6, 10), Vector2(5, 10)]
+        self.body = [Vector2(4, 5), Vector2(3, 5), Vector2(2, 5)]
         self.direction = Vector2(1, 0)
         self.screen = screen
 
@@ -83,41 +83,67 @@ class GAME:
     def get_states(self):
         states = np.zeros((2, cell_number, cell_number))
         for n, block in enumerate(self.snake.body, start=1):
-            states[0, int(block.x), int(block.y)] = n ** (-1 / 4)
+            states[0, int(block.x), int(block.y)] = 1 - 0.9 * (n / len(self.snake.body))
         states[1, int(self.fruit.pos.x), int(self.fruit.pos.y)] = 1
         return states
 
-    def spin_once(self, action):
+    def spin_once(self, action, n_moves):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-        self.snake.move_body()
-        reward = -0.1
+        reward = -1
         done = False
-        if self.check_collision():
-            self.snake.body.insert(0, self.fruit.pos)
-            self.score += 1
-            self.randomize()
-            reward = 10
+
+        #        if action == 0:
+        #            if self.snake.direction[1] != -1:
+        #                self.snake.direction = (0, 1)
+        #        elif action == 1:
+        #            if self.snake.direction[1] != 1:
+        #                self.snake.direction = (0, -1)
+        #        elif action == 2:
+        #            if self.snake.direction[0] != -1:
+        #                self.snake.direction = (1, 0)
+        #        elif action == 3:
+        #            if self.snake.direction[0] != 1:
+        #                self.snake.direction = (-1, 0)
+        if action == 0:
+            self.snake.direction = self.snake.direction
+        elif action == 1:
+            if self.snake.direction == (0, 1):
+                self.snake.direction = (1, 0)
+            elif self.snake.direction == (1, 0):
+                self.snake.direction = (0, -1)
+            elif self.snake.direction == (0, -1):
+                self.snake.direction = (-1, 0)
+            elif self.snake.direction == (-1, 0):
+                self.snake.direction = (0, 1)
+        elif action == 2:
+            if self.snake.direction == (0, 1):
+                self.snake.direction = (-1, 0)
+            elif self.snake.direction == (1, 0):
+                self.snake.direction = (0, 1)
+            elif self.snake.direction == (0, -1):
+                self.snake.direction = (1, 0)
+            elif self.snake.direction == (-1, 0):
+                self.snake.direction = (0, -1)
+
+        self.snake.move_body()
 
         if self.check_fail():
             reward = -10
             done = True
             self.reset()
 
-        if action == 0:
-            if self.snake.direction[1] != -1:
-                self.snake.direction = (0, 1)
-        elif action == 1:
-            if self.snake.direction[1] != 1:
-                self.snake.direction = (0, -1)
-        elif action == 2:
-            if self.snake.direction[0] != -1:
-                self.snake.direction = (1, 0)
-        elif action == 3:
-            if self.snake.direction[0] != 1:
-                self.snake.direction = (-1, 0)
+        if self.check_collision():
+            self.snake.body.insert(0, self.fruit.pos)
+            self.score += 1
+            self.randomize()
+            reward = 10
+
+        if n_moves > len(self.snake.body) * 100:
+            reward = -10
+
         return self.get_states(), reward, done, self.score
 
     def draw(self):
